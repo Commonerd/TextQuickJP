@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TextQuickJP - 急なメモに最適なブラウザテキストエディタ</title>
+    <meta
+      name="description"
+      content="TextQuickJPは、サインアップ不要で、ブラウザですぐに使える無料のオンラインメモ帳・テキストエディタです。入力内容はブラウザに自動保存されるため、急なメモやアイデアの一時保存に最適です。日本語入力補助機能も搭載。"
+    />
+    <meta
+      name="keywords"
+      content="オンラインメモ帳, ブラウザ テキストエディタ, 急なメモ, 一時保存, ログイン不要, 素早くメモ, Webメモ, 無料テキスト入力, クイックメモ, 日本語入力, 半角全角変換, カタカナ変換"
+    />
+    <link rel="canonical" href="https://textquickjp.netflify.app/" />
+    <link rel="icon" href="/favicon.ico" type="image/x-icon" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+    <style>
+      /* Basic Reset & Variables */
+      :root {
+        --bg-color-light: #f8f9fa;
+        --text-color-light: #212529;
+        --border-color-light: #dee2e6;
+        --bg-color-dark: #282c34;
+        --text-color-dark: #abb2bf;
+        --border-color-dark: #3a3f4a;
+        --accent-color: #007bff;
+        --font-family: "Hiragino Sans", "ヒラギノ角ゴ ProN W3", "Yu Gothic",
+          "游ゴシック", "Meiryo", "メイリオ", "Segoe UI", "Roboto", sans-serif;
+      }
+
+      body {
+        margin: 0;
+        font-family: var(--font-family);
+        background-color: var(--bg-color-light);
+        color: var(--text-color-light);
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+        transition: background-color 0.3s, color 0.3s;
+      }
+
+      body.dark-mode {
+        background-color: var(--bg-color-dark);
+        color: var(--text-color-dark);
+      }
+
+      header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 15px 25px;
+        border-bottom: 1px solid var(--border-color-light);
+        background-color: var(--bg-color-light);
+        z-index: 10;
+      }
+
+      body.dark-mode header {
+        border-bottom-color: var(--border-color-dark);
+        background-color: var(--bg-color-dark);
+      }
+
+      .logo {
+        font-size: 1.8em;
+        font-weight: bold;
+        color: var(--accent-color);
+        text-decoration: none;
+      }
+
+      .controls {
+        display: flex;
+        gap: 15px;
+        align-items: center;
+      }
+
+      .control-button {
+        background-color: var(--accent-color);
+        color: white;
+        border: none;
+        padding: 8px 15px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 0.9em;
+        transition: background-color 0.2s;
+        white-space: nowrap;
+      }
+
+      .control-button:hover {
+        background-color: #0056b3;
+      }
+
+      .mode-toggle {
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        user-select: none;
+        white-space: nowrap;
+      }
+
+      .mode-toggle input[type="checkbox"] {
+        display: none;
+      }
+
+      .slider {
+        position: relative;
+        width: 40px;
+        height: 20px;
+        background-color: #ccc;
+        border-radius: 20px;
+        transition: background-color 0.3s;
+        margin-left: 8px;
+      }
+
+      .slider:before {
+        content: "";
+        position: absolute;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background-color: white;
+        top: 2px;
+        left: 2px;
+        transition: transform 0.3s;
+      }
+
+      input:checked + .slider {
+        background-color: var(--accent-color);
+      }
+
+      input:checked + .slider:before {
+        transform: translateX(20px);
+      }
+
+      main {
+        flex-grow: 1;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        max-width: 1000px;
+        width: 100%;
+        margin: 0 auto;
+      }
+
+      #editor {
+        width: 100%;
+        flex-grow: 1;
+        padding: 15px;
+        border: 1px solid var(--border-color-light);
+        border-radius: 8px;
+        font-size: 1.1em;
+        line-height: 1.6;
+        resize: none;
+        outline: none;
+        box-sizing: border-box;
+        background-color: var(--bg-color-light);
+        color: var(--text-color-light);
+        transition: border-color 0.3s, background-color 0.3s, color 0.3s;
+        min-height: 400px;
+      }
+
+      body.dark-mode #editor {
+        border-color: var(--border-color-dark);
+        background-color: var(--bg-color-dark);
+        color: var(--text-color-dark);
+      }
+
+      .info-message {
+        margin-top: 15px;
+        font-size: 0.9em;
+        color: #6c757d;
+        text-align: center;
+      }
+
+      body.dark-mode .info-message {
+        color: #a0a0a0;
+      }
+
+      .palette-container {
+        position: relative;
+        margin-left: 15px; /* Adjust spacing from other buttons */
+      }
+
+      #japaneseAssistantToggle {
+        background-color: #28a745; /* Green for assistant */
+      }
+
+      #japaneseAssistantToggle:hover {
+        background-color: #218838;
+      }
+
+      #japaneseAssistantPalette {
+        display: none;
+        position: absolute;
+        top: 100%; /* Position below the toggle button */
+        right: 0;
+        background-color: var(--bg-color-light);
+        border: 1px solid var(--border-color-light);
+        border-radius: 5px;
+        padding: 10px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        z-index: 20; /* Ensure it's above other elements */
+        white-space: nowrap;
+      }
+
+      body.dark-mode #japaneseAssistantPalette {
+        background-color: var(--bg-color-dark);
+        border-color: var(--border-color-dark);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+      }
+
+      #japaneseAssistantPalette button {
+        display: block;
+        width: 100%;
+        padding: 8px 12px;
+        margin-bottom: 5px;
+        border: none;
+        background-color: var(--accent-color);
+        color: white;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background-color 0.2s;
+        text-align: left; /* Align text to left */
+      }
+
+      #japaneseAssistantPalette button:last-child {
+        margin-bottom: 0;
+      }
+
+      #japaneseAssistantPalette button:hover {
+        background-color: #0056b3;
+      }
+
+      .counter-info {
+        margin-top: 10px;
+        font-size: 0.9em;
+        color: #6c757d;
+        text-align: right;
+        width: 100%;
+      }
+
+      body.dark-mode .counter-info {
+        color: #a0a0a0;
+      }
+
+      footer {
+        padding: 15px;
+        text-align: center;
+        font-size: 0.85em;
+        color: #6c757d;
+        border-top: 1px solid var(--border-color-light);
+        margin-top: 20px;
+      }
+
+      body.dark-mode footer {
+        border-top-color: var(--border-color-dark);
+        color: #a0a0a0;
+      }
+
+      @media (max-width: 600px) {
+        header {
+          flex-direction: column;
+          gap: 10px;
+          padding: 10px 15px;
+        }
+        .controls {
+          width: 100%;
+          justify-content: center;
+          gap: 10px;
+        }
+        .logo {
+          font-size: 1.5em;
+        }
+        main {
+          padding: 15px;
+        }
+        #editor {
+          min-height: 300px;
+        }
+        .palette-container {
+          margin-left: 0; /* No extra margin on small screens */
+          width: 100%;
+          display: flex;
+          justify-content: center;
+        }
+        #japaneseAssistantPalette {
+          position: static; /* Stack vertically on small screens */
+          width: auto;
+          box-shadow: none;
+          border: none;
+          padding: 0;
+        }
+        #japaneseAssistantPalette button {
+          width: auto; /* Adjust button width */
+          display: inline-block; /* Display inline for horizontal flow */
+          margin-right: 5px; /* Add some spacing */
+          margin-bottom: 5px;
+        }
+        .counter-info {
+          text-align: center;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <a href="/" class="logo">TextQuickJP</a>
+      <div class="controls">
+        <label class="mode-toggle">
+          <span>ダークモード</span>
+          <input type="checkbox" id="darkModeToggle" />
+          <span class="slider"></span>
+        </label>
+        <div class="palette-container">
+          <button id="japaneseAssistantToggle" class="control-button">
+            日本語補助
+          </button>
+          <div id="japaneseAssistantPalette">
+            <button id="convertHalfToFull">半角を全角に</button>
+            <button id="convertFullToHalf">全角を半角に</button>
+            <button id="convertToKatakana">ひらがなをカタカナに</button>
+            <button id="convertToHiragana">カタカナをひらがなに</button>
+          </div>
+        </div>
+        <button id="clearButton" class="control-button">すべてクリア</button>
+        <button id="copyButton" class="control-button">すべてコピー</button>
+      </div>
+    </header>
+
+    <main>
+      <textarea
+        id="editor"
+        placeholder="ここにテキストを入力してください... 入力内容はブラウザに自動保存されます。"
+      ></textarea>
+      <div class="counter-info">
+        <span id="charCount">文字数: 0</span> /
+        <span id="lineCount">行数: 0</span>
+      </div>
+      <p class="info-message">
+        入力されたテキストはブラウザのローカルストレージに自動保存されます。タブやブラウザを閉じても、次回アクセス時に復元されます。機密性の高い情報には専用のソリューションをご検討ください。
+      </p>
+    </main>
+
+    <footer>
+      &copy; 2025 TextQuickJP. All rights reserved. |
+      <a href="https://textquickjp.netlify.app/privacy" style="color: inherit"
+        >プライバシーポリシー</a
+      >
+      |
+      <a href="https://textquickjp.jp/terms" style="color: inherit">利用規約</a>
+    </footer>
+
+    <script>
+      const editor = document.getElementById("editor");
+      const clearButton = document.getElementById("clearButton");
+      const copyButton = document.getElementById("copyButton");
+      const darkModeToggle = document.getElementById("darkModeToggle");
+      const japaneseAssistantToggle = document.getElementById(
+        "japaneseAssistantToggle"
+      );
+      const japaneseAssistantPalette = document.getElementById(
+        "japaneseAssistantPalette"
+      );
+      const convertHalfToFullButton =
+        document.getElementById("convertHalfToFull");
+      const convertFullToHalfButton =
+        document.getElementById("convertFullToHalf");
+      const convertToKatakanaButton =
+        document.getElementById("convertToKatakana");
+      const convertToHiraganaButton =
+        document.getElementById("convertToHiragana");
+      const charCountSpan = document.getElementById("charCount");
+      const lineCountSpan = document.getElementById("lineCount");
+
+      const localStorageKey = "textquickjp_content";
+      const darkModeKey = "textquickjp_dark_mode";
+
+      // --- Core Functions ---
+      // Load content from local storage
+      if (localStorage.getItem(localStorageKey)) {
+        editor.value = localStorage.getItem(localStorageKey);
+        updateCounters(); // Update counters on load
+      }
+
+      // Save content to local storage on input
+      editor.addEventListener("input", () => {
+        localStorage.setItem(localStorageKey, editor.value);
+        updateCounters(); // Update counters on input
+      });
+
+      // Clear button functionality
+      clearButton.addEventListener("click", () => {
+        if (
+          confirm(
+            "入力されたすべてのテキストをクリアしてもよろしいですか？この操作は元に戻せません。"
+          )
+        ) {
+          editor.value = "";
+          localStorage.removeItem(localStorageKey);
+          updateCounters(); // Update counters after clearing
+        }
+      });
+
+      // Copy button functionality
+      copyButton.addEventListener("click", () => {
+        editor.select();
+        document.execCommand("copy");
+        const originalText = copyButton.textContent;
+        copyButton.textContent = "コピーしました！";
+        setTimeout(() => {
+          copyButton.textContent = originalText;
+        }, 1500);
+      });
+
+      // Dark mode functionality
+      const enableDarkMode = () => {
+        document.body.classList.add("dark-mode");
+        localStorage.setItem(darkModeKey, "enabled");
+      };
+
+      const disableDarkMode = () => {
+        document.body.classList.remove("dark-mode");
+        localStorage.setItem(darkModeKey, "disabled");
+      };
+
+      if (localStorage.getItem(darkModeKey) === "enabled") {
+        enableDarkMode();
+        darkModeToggle.checked = true;
+      } else {
+        disableDarkMode();
+        darkModeToggle.checked = false;
+      }
+
+      darkModeToggle.addEventListener("change", () => {
+        if (darkModeToggle.checked) {
+          enableDarkMode();
+        } else {
+          disableDarkMode();
+        }
+      });
+
+      document.addEventListener("keydown", (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.altKey && e.key === "d") {
+          darkModeToggle.checked = !darkModeToggle.checked;
+          if (darkModeToggle.checked) {
+            enableDarkMode();
+          } else {
+            disableDarkMode();
+          }
+          e.preventDefault();
+        }
+      });
+
+      // --- Japanese Input Assistant Functions ---
+
+      // Toggle Japanese Assistant Palette visibility
+      japaneseAssistantToggle.addEventListener("click", (event) => {
+        japaneseAssistantPalette.style.display =
+          japaneseAssistantPalette.style.display === "block" ? "none" : "block";
+        event.stopPropagation(); // Prevent document click from immediately closing
+      });
+
+      // Close palette when clicking outside
+      document.addEventListener("click", (event) => {
+        if (
+          !japaneseAssistantPalette.contains(event.target) &&
+          event.target !== japaneseAssistantToggle
+        ) {
+          japaneseAssistantPalette.style.display = "none";
+        }
+      });
+
+      // Function to convert half-width to full-width
+      convertHalfToFullButton.addEventListener("click", () => {
+        editor.value = editor.value
+          .replace(/[!-~]/g, function (s) {
+            return String.fromCharCode(s.charCodeAt(0) + 0xfee0);
+          })
+          .replace(/ /g, "　"); // Convert space
+        localStorage.setItem(localStorageKey, editor.value); // Save immediately
+        updateCounters();
+      });
+
+      // Function to convert full-width to half-width
+      convertFullToHalfButton.addEventListener("click", () => {
+        editor.value = editor.value
+          .replace(/[Ａ-Ｚａ-ｚ０-９]/g, function (s) {
+            return String.fromCharCode(s.charCodeAt(0) - 0xfee0);
+          })
+          .replace(/　/g, " "); // Convert full-width space
+        localStorage.setItem(localStorageKey, editor.value); // Save immediately
+        updateCounters();
+      });
+
+      // Function to convert Hiragana to Katakana
+      convertToKatakanaButton.addEventListener("click", () => {
+        editor.value = editor.value.replace(
+          /[\u3041-\u3096]/g,
+          function (match) {
+            return String.fromCharCode(match.charCodeAt(0) + 0x60);
+          }
+        );
+        localStorage.setItem(localStorageKey, editor.value); // Save immediately
+        updateCounters();
+      });
+
+      // Function to convert Katakana to Hiragana
+      convertToHiraganaButton.addEventListener("click", () => {
+        editor.value = editor.value.replace(
+          /[\u30a1-\u30f6]/g,
+          function (match) {
+            return String.fromCharCode(match.charCodeAt(0) - 0x60);
+          }
+        );
+        localStorage.setItem(localStorageKey, editor.value); // Save immediately
+        updateCounters();
+      });
+
+      // Character and Line Counter Function
+      function updateCounters() {
+        const text = editor.value;
+        const charCount = text.length;
+        const lineCount = text.split("\n").length;
+        charCountSpan.textContent = `文字数: ${charCount}`;
+        lineCountSpan.textContent = `行数: ${lineCount}`;
+      }
+
+      // Initial update when page loads
+      updateCounters();
+    </script>
+  </body>
+</html>
